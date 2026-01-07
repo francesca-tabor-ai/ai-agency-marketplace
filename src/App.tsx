@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { Navigation } from './components/layout/Navigation';
 import { Footer } from './components/layout/Footer';
@@ -28,6 +28,7 @@ import { AgencyAccount } from './pages/account/AgencyAccount';
 import { Projects } from './pages/account/Projects';
 import { Jobs } from './pages/account/Jobs';
 import { Contact } from './pages/Contact';
+import { Link } from 'react-router-dom';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -77,6 +78,16 @@ function App() {
             <Route path="/account/projects" element={<Projects />} />
             <Route path="/account/jobs" element={<Jobs />} />
             <Route path="/contact" element={<Contact />} />
+            {/* Catch-all route for 404 - must be last */}
+            <Route path="*" element={
+              <div className="min-h-screen bg-brand-dark/5 pt-24 pb-12 px-4 sm:px-6 lg:px-8">
+                <div className="max-w-7xl mx-auto text-center">
+                  <h1 className="text-4xl font-bold text-brand-dark mb-4">404 - Page Not Found</h1>
+                  <p className="text-brand-dark/70 mb-6">The page you're looking for doesn't exist.</p>
+                  <Link to="/" className="btn-primary inline-block">Go Home</Link>
+                </div>
+              </div>
+            } />
           </Routes>
         </main>
         <Footer />
