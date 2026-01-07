@@ -16,7 +16,7 @@ export function Home() {
         {/* New York Background */}
         <div className="absolute inset-0 overflow-hidden">
           <img
-            src="https://www.insightvacations.com/wp-content/uploads/2023/01/mike-c-valdivia-kZokA2VTKn4-unsplash.jpg"
+            src="https://4kwallpapers.com/images/wallpapers/new-york-city-skyline-panorama-sunset-skyscrapers-6144x2781-4645.jpg"
             alt="New York Skyline"
             className="w-full h-full object-cover"
           />
