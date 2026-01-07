@@ -1,47 +1,83 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, ChevronDown } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 
-const services = [
-  'AI Development',
-  'Machine Learning',
-  'Natural Language Processing',
-  'Computer Vision',
-  'Robotics',
-  'Data Analytics',
-  'AI Consulting',
-];
-
-const industries = [
-  'Healthcare',
-  'Finance',
-  'Retail',
-  'Manufacturing',
-  'Technology',
-  'Education',
-  'Other',
-];
-
-const locations = [
-  'United States',
-  'United Kingdom',
-  'Europe',
-  'Asia',
-  'Remote',
-];
-
-const sizes = [
-  '1-10 employees',
-  '11-50 employees',
-  '51-200 employees',
-  '201+ employees',
-];
+export interface AgencyFilters {
+  search: string;
+  service: string;
+  industry: string;
+  technology: string;
+  location: string;
+  rating: string;
+  size: string;
+}
 
 interface FiltersProps {
-  onFilterChange: (filters: any) => void;
+  onFilterChange: (filters: AgencyFilters) => void;
 }
 
 export function AgencyFilters({ onFilterChange }: FiltersProps) {
   const [isOpen, setIsOpen] = React.useState(false);
+  const [servicesList, setServicesList] = useState<Array<{ id: string; name: string }>>([]);
+  const [industriesList, setIndustriesList] = useState<Array<{ id: string; name: string }>>([]);
+  const [technologiesList, setTechnologiesList] = useState<Array<{ id: string; name: string }>>([]);
+  const [filters, setFilters] = useState<AgencyFilters>({
+    search: '',
+    service: '',
+    industry: '',
+    technology: '',
+    location: '',
+    rating: '',
+    size: '',
+  });
+
+  // Fetch filter options from database
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      // Fetch services
+      const { data: services } = await supabase
+        .from('services')
+        .select('id, name')
+        .order('name');
+      if (services) setServicesList(services);
+
+      // Fetch industries
+      const { data: industries } = await supabase
+        .from('industries')
+        .select('id, name')
+        .order('name');
+      if (industries) setIndustriesList(industries);
+
+      // Fetch technologies
+      const { data: technologies } = await supabase
+        .from('technologies')
+        .select('id, name')
+        .order('name');
+      if (technologies) setTechnologiesList(technologies);
+    };
+    fetchFilterOptions();
+  }, []);
+
+  const handleFilterChange = (key: keyof AgencyFilters, value: string) => {
+    const newFilters = { ...filters, [key]: value };
+    setFilters(newFilters);
+    onFilterChange(newFilters);
+  };
+
+  const locations = [
+    'United States',
+    'United Kingdom',
+    'Europe',
+    'Asia',
+    'Remote',
+  ];
+
+  const sizes = [
+    '1-10 employees',
+    '11-50 employees',
+    '51-200 employees',
+    '201+ employees',
+  ];
 
   return (
     <div className="bg-white shadow-md rounded-lg p-6 mb-8">
@@ -50,6 +86,8 @@ export function AgencyFilters({ onFilterChange }: FiltersProps) {
         <input
           type="text"
           placeholder="Search for AI agencies..."
+          value={filters.search}
+          onChange={(e) => handleFilterChange('search', e.target.value)}
           className="w-full pl-12 pr-4 py-3 rounded-lg border border-brand-dark/10 focus:border-brand-light focus:ring-2 focus:ring-brand-light/20 transition-colors duration-200"
         />
         <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-brand-dark/40 w-5 h-5" />
@@ -71,10 +109,14 @@ export function AgencyFilters({ onFilterChange }: FiltersProps) {
           <label className="block text-sm font-medium text-brand-dark mb-2">
             Services
           </label>
-          <select className="w-full rounded-lg border-brand-dark/10 focus:border-brand-light focus:ring-2 focus:ring-brand-light/20">
+          <select
+            value={filters.service}
+            onChange={(e) => handleFilterChange('service', e.target.value)}
+            className="w-full rounded-lg border-brand-dark/10 focus:border-brand-light focus:ring-2 focus:ring-brand-light/20"
+          >
             <option value="">All Services</option>
-            {services.map((service) => (
-              <option key={service} value={service}>{service}</option>
+            {servicesList.map((service) => (
+              <option key={service.id} value={service.name}>{service.name}</option>
             ))}
           </select>
         </div>
@@ -84,10 +126,31 @@ export function AgencyFilters({ onFilterChange }: FiltersProps) {
           <label className="block text-sm font-medium text-brand-dark mb-2">
             Industries
           </label>
-          <select className="w-full rounded-lg border-brand-dark/10 focus:border-brand-light focus:ring-2 focus:ring-brand-light/20">
+          <select
+            value={filters.industry}
+            onChange={(e) => handleFilterChange('industry', e.target.value)}
+            className="w-full rounded-lg border-brand-dark/10 focus:border-brand-light focus:ring-2 focus:ring-brand-light/20"
+          >
             <option value="">All Industries</option>
-            {industries.map((industry) => (
-              <option key={industry} value={industry}>{industry}</option>
+            {industriesList.map((industry) => (
+              <option key={industry.id} value={industry.name}>{industry.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Technologies */}
+        <div>
+          <label className="block text-sm font-medium text-brand-dark mb-2">
+            Technologies
+          </label>
+          <select
+            value={filters.technology}
+            onChange={(e) => handleFilterChange('technology', e.target.value)}
+            className="w-full rounded-lg border-brand-dark/10 focus:border-brand-light focus:ring-2 focus:ring-brand-light/20"
+          >
+            <option value="">All Technologies</option>
+            {technologiesList.map((tech) => (
+              <option key={tech.id} value={tech.name}>{tech.name}</option>
             ))}
           </select>
         </div>
@@ -97,23 +160,14 @@ export function AgencyFilters({ onFilterChange }: FiltersProps) {
           <label className="block text-sm font-medium text-brand-dark mb-2">
             Location
           </label>
-          <select className="w-full rounded-lg border-brand-dark/10 focus:border-brand-light focus:ring-2 focus:ring-brand-light/20">
+          <select
+            value={filters.location}
+            onChange={(e) => handleFilterChange('location', e.target.value)}
+            className="w-full rounded-lg border-brand-dark/10 focus:border-brand-light focus:ring-2 focus:ring-brand-light/20"
+          >
             <option value="">All Locations</option>
             {locations.map((location) => (
               <option key={location} value={location}>{location}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Agency Size */}
-        <div>
-          <label className="block text-sm font-medium text-brand-dark mb-2">
-            Agency Size
-          </label>
-          <select className="w-full rounded-lg border-brand-dark/10 focus:border-brand-light focus:ring-2 focus:ring-brand-light/20">
-            <option value="">Any Size</option>
-            {sizes.map((size) => (
-              <option key={size} value={size}>{size}</option>
             ))}
           </select>
         </div>
@@ -126,45 +180,36 @@ export function AgencyFilters({ onFilterChange }: FiltersProps) {
           <label className="block text-sm font-medium text-brand-dark mb-2">
             Minimum Rating
           </label>
-          <select className="w-full rounded-lg border-brand-dark/10 focus:border-brand-light focus:ring-2 focus:ring-brand-light/20">
+          <select
+            value={filters.rating}
+            onChange={(e) => handleFilterChange('rating', e.target.value)}
+            className="w-full rounded-lg border-brand-dark/10 focus:border-brand-light focus:ring-2 focus:ring-brand-light/20"
+          >
             <option value="">Any Rating</option>
+            <option value="4.5">4.5+ Stars</option>
             <option value="4">4+ Stars</option>
+            <option value="3.5">3.5+ Stars</option>
             <option value="3">3+ Stars</option>
-            <option value="2">2+ Stars</option>
           </select>
         </div>
 
-        {/* Experience */}
+        {/* Agency Size */}
         <div>
           <label className="block text-sm font-medium text-brand-dark mb-2">
-            Experience
+            Agency Size
           </label>
-          <select className="w-full rounded-lg border-brand-dark/10 focus:border-brand-light focus:ring-2 focus:ring-brand-light/20">
-            <option value="">Any Experience</option>
-            <option value="7">7+ years</option>
-            <option value="4">4-6 years</option>
-            <option value="1">1-3 years</option>
+          <select
+            value={filters.size}
+            onChange={(e) => handleFilterChange('size', e.target.value)}
+            className="w-full rounded-lg border-brand-dark/10 focus:border-brand-light focus:ring-2 focus:ring-brand-light/20"
+          >
+            <option value="">Any Size</option>
+            {sizes.map((size) => (
+              <option key={size} value={size}>{size}</option>
+            ))}
           </select>
         </div>
 
-        {/* Budget Range */}
-        <div className="lg:col-span-2">
-          <label className="block text-sm font-medium text-brand-dark mb-2">
-            Budget Range
-          </label>
-          <div className="flex gap-4">
-            <input
-              type="number"
-              placeholder="Min"
-              className="w-full rounded-lg border-brand-dark/10 focus:border-brand-light focus:ring-2 focus:ring-brand-light/20"
-            />
-            <input
-              type="number"
-              placeholder="Max"
-              className="w-full rounded-lg border-brand-dark/10 focus:border-brand-light focus:ring-2 focus:ring-brand-light/20"
-            />
-          </div>
-        </div>
       </div>
     </div>
   );

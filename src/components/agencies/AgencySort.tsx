@@ -14,11 +14,10 @@ export function AgencySort({ onSortChange }: SortProps) {
           onChange={(e) => onSortChange(e.target.value)}
           className="rounded-lg border-brand-dark/10 focus:border-brand-light focus:ring-2 focus:ring-brand-light/20"
         >
-          <option value="rating">Rating (High to Low)</option>
-          <option value="experience">Experience (High to Low)</option>
-          <option value="budget">Budget (Low to High)</option>
-          <option value="size">Agency Size</option>
-          <option value="location">Location</option>
+          <option value="rating-desc">Rating (High to Low)</option>
+          <option value="rating-asc">Rating (Low to High)</option>
+          <option value="name-asc">Name (A-Z)</option>
+          <option value="name-desc">Name (Z-A)</option>
         </select>
       </div>
 

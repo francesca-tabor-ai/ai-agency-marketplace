@@ -1,14 +1,23 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Building2, Menu, X, ChevronDown } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Building2, Menu, X, ChevronDown, User, LogOut, Settings } from 'lucide-react';
+import { useUser } from '../../hooks/useUser';
 
 export function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, loading, signOut } = useUser();
 
   const isActive = (path: string) => location.pathname === path;
+
+  const handleSignOut = async () => {
+    await signOut();
+    setIsAccountMenuOpen(false);
+    navigate('/');
+  };
 
   const handleDropdownClick = (dropdown: string) => {
     setActiveDropdown(activeDropdown === dropdown ? null : dropdown);
@@ -99,38 +108,98 @@ export function Navigation() {
           </div>
 
           {/* Desktop Account Menu */}
-          <div className="hidden md:flex md:items-center">
-            <div className="relative">
-              <button
-                onClick={() => setIsAccountMenuOpen(!isAccountMenuOpen)}
-                className="flex items-center text-gray-400 hover:text-brand-yellow px-3 py-2 text-sm font-medium transition-colors duration-200"
-              >
-                Account
-                <ChevronDown className={`ml-1 h-4 w-4 transition-transform duration-200 ${isAccountMenuOpen ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {isAccountMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-brand-dark/95 backdrop-blur-md ring-1 ring-black ring-opacity-5 animate-slide-down">
-                  <div className="py-1">
-                    <Link to="/business-account" className="block px-4 py-2 text-sm text-gray-300 hover:text-brand-yellow hover:bg-brand-dark transition-colors duration-150">
-                      For Businesses
-                    </Link>
-                    <Link to="/agency-account" className="block px-4 py-2 text-sm text-gray-300 hover:text-brand-yellow hover:bg-brand-dark transition-colors duration-150">
-                      For Agencies
-                    </Link>
-                    <Link to="/login" className="block px-4 py-2 text-sm text-gray-300 hover:text-brand-yellow hover:bg-brand-dark transition-colors duration-150">
-                      Sign In
-                    </Link>
-                    <Link to="/register" className="block px-4 py-2 text-sm text-gray-300 hover:text-brand-yellow hover:bg-brand-dark transition-colors duration-150">
-                      Sign Up
-                    </Link>
+          <div className="hidden md:flex md:items-center md:gap-4">
+            {!loading && (
+              <>
+                {user ? (
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsAccountMenuOpen(!isAccountMenuOpen)}
+                      className="flex items-center gap-2 text-gray-300 hover:text-brand-yellow px-3 py-2 text-sm font-medium transition-colors duration-200"
+                    >
+                      <User className="h-4 w-4" />
+                      <span className="max-w-[120px] truncate">
+                        {user.email?.split('@')[0] || 'Account'}
+                      </span>
+                      <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isAccountMenuOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {isAccountMenuOpen && (
+                      <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-brand-dark/95 backdrop-blur-md ring-1 ring-black ring-opacity-5 animate-slide-down">
+                        <div className="py-1">
+                          <div className="px-4 py-2 text-xs text-gray-400 border-b border-gray-700">
+                            {user.email}
+                          </div>
+                          <Link
+                            to="/business-account"
+                            onClick={() => setIsAccountMenuOpen(false)}
+                            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:text-brand-yellow hover:bg-brand-dark transition-colors duration-150"
+                          >
+                            <Settings className="h-4 w-4" />
+                            Account Settings
+                          </Link>
+                          <button
+                            onClick={handleSignOut}
+                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:text-red-400 hover:bg-brand-dark transition-colors duration-150"
+                          >
+                            <LogOut className="h-4 w-4" />
+                            Sign Out
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
-            </div>
-            <Link to="/post-project" className="ml-8 btn-primary">
-              Post Your Project
-            </Link>
+                ) : (
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsAccountMenuOpen(!isAccountMenuOpen)}
+                      className="flex items-center text-gray-400 hover:text-brand-yellow px-3 py-2 text-sm font-medium transition-colors duration-200"
+                    >
+                      Account
+                      <ChevronDown className={`ml-1 h-4 w-4 transition-transform duration-200 ${isAccountMenuOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {isAccountMenuOpen && (
+                      <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-brand-dark/95 backdrop-blur-md ring-1 ring-black ring-opacity-5 animate-slide-down">
+                        <div className="py-1">
+                          <Link
+                            to="/business-account"
+                            onClick={() => setIsAccountMenuOpen(false)}
+                            className="block px-4 py-2 text-sm text-gray-300 hover:text-brand-yellow hover:bg-brand-dark transition-colors duration-150"
+                          >
+                            For Businesses
+                          </Link>
+                          <Link
+                            to="/agency-account"
+                            onClick={() => setIsAccountMenuOpen(false)}
+                            className="block px-4 py-2 text-sm text-gray-300 hover:text-brand-yellow hover:bg-brand-dark transition-colors duration-150"
+                          >
+                            For Agencies
+                          </Link>
+                          <Link
+                            to="/login"
+                            onClick={() => setIsAccountMenuOpen(false)}
+                            className="block px-4 py-2 text-sm text-gray-300 hover:text-brand-yellow hover:bg-brand-dark transition-colors duration-150"
+                          >
+                            Sign In
+                          </Link>
+                          <Link
+                            to="/register"
+                            onClick={() => setIsAccountMenuOpen(false)}
+                            className="block px-4 py-2 text-sm text-gray-300 hover:text-brand-yellow hover:bg-brand-dark transition-colors duration-150"
+                          >
+                            Sign Up
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <Link to="/post-project" className="btn-primary">
+                  Post Your Project
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -188,18 +257,52 @@ export function Navigation() {
           </div>
           <div className="pt-4 pb-3 border-t border-brand-light/10">
             <div className="space-y-1">
-              <Link to="/business-account" className="block px-3 py-2 text-base font-medium text-gray-300 hover:text-brand-yellow hover:bg-brand-dark transition-colors duration-150">
-                For Businesses
-              </Link>
-              <Link to="/agency-account" className="block px-3 py-2 text-base font-medium text-gray-300 hover:text-brand-yellow hover:bg-brand-dark transition-colors duration-150">
-                For Agencies
-              </Link>
-              <Link to="/login" className="block px-3 py-2 text-base font-medium text-gray-300 hover:text-brand-yellow hover:bg-brand-dark transition-colors duration-150">
-                Sign In
-              </Link>
-              <Link to="/register" className="block px-3 py-2 text-base font-medium text-gray-300 hover:text-brand-yellow hover:bg-brand-dark transition-colors duration-150">
-                Sign Up
-              </Link>
+              {user ? (
+                <>
+                  <div className="px-3 py-2 text-xs text-gray-400 border-b border-gray-700 mb-2">
+                    {user.email}
+                  </div>
+                  <Link
+                    to="/business-account"
+                    className="block px-3 py-2 text-base font-medium text-gray-300 hover:text-brand-yellow hover:bg-brand-dark transition-colors duration-150"
+                  >
+                    Account Settings
+                  </Link>
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full text-left block px-3 py-2 text-base font-medium text-gray-300 hover:text-red-400 hover:bg-brand-dark transition-colors duration-150"
+                  >
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/business-account"
+                    className="block px-3 py-2 text-base font-medium text-gray-300 hover:text-brand-yellow hover:bg-brand-dark transition-colors duration-150"
+                  >
+                    For Businesses
+                  </Link>
+                  <Link
+                    to="/agency-account"
+                    className="block px-3 py-2 text-base font-medium text-gray-300 hover:text-brand-yellow hover:bg-brand-dark transition-colors duration-150"
+                  >
+                    For Agencies
+                  </Link>
+                  <Link
+                    to="/login"
+                    className="block px-3 py-2 text-base font-medium text-gray-300 hover:text-brand-yellow hover:bg-brand-dark transition-colors duration-150"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="block px-3 py-2 text-base font-medium text-gray-300 hover:text-brand-yellow hover:bg-brand-dark transition-colors duration-150"
+                  >
+                    Sign Up
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

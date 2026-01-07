@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -20,6 +20,9 @@ const registerSchema = z.object({
 type RegisterFormData = z.infer<typeof registerSchema>;
 
 export function Register() {
+  const navigate = useNavigate();
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   const {
     register,
     handleSubmit,
@@ -30,22 +33,36 @@ export function Register() {
 
   const onSubmit = async (data: RegisterFormData) => {
     try {
+      setMessage(null);
+
       const { error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
           data: {
             role: data.role,
+            full_name: data.email.split('@')[0], // Default name from email
           },
         },
       });
 
       if (error) throw error;
 
-      // Redirect to onboarding or dashboard
-    } catch (error) {
+      setMessage({
+        type: 'success',
+        text: 'Account created! Please check your email to verify your account.',
+      });
+
+      // Redirect to home after a short delay
+      setTimeout(() => {
+        navigate('/');
+      }, 2000);
+    } catch (error: any) {
       console.error('Error signing up:', error);
-      // Show error message
+      setMessage({
+        type: 'error',
+        text: error.message || 'Failed to create account. Please try again.',
+      });
     }
   };
 
@@ -58,6 +75,18 @@ export function Register() {
         </div>
 
         <div className="bg-white rounded-lg shadow-sm p-8">
+          {message && (
+            <div
+              className={`mb-4 p-3 rounded-lg text-sm ${
+                message.type === 'success'
+                  ? 'bg-green-50 text-green-800 border border-green-200'
+                  : 'bg-red-50 text-red-800 border border-red-200'
+              }`}
+            >
+              {message.text}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-brand-dark mb-2">

@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '../../lib/supabase';
+import { useUser } from '../../hooks/useUser';
 
 const projectSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters'),
@@ -49,53 +51,186 @@ const budgetRanges = [
 ];
 
 export function ProjectForm() {
+  const navigate = useNavigate();
+  const { user, loading: userLoading } = useUser();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [servicesList, setServicesList] = useState<Array<{ id: string; name: string }>>([]);
+
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
     reset,
+    watch,
   } = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
+    defaultValues: {
+      required_services: [],
+    },
   });
+
+  const selectedServices = watch('required_services') || [];
+
+  // Fetch services list on mount
+  useEffect(() => {
+    const fetchServices = async () => {
+      const { data, error } = await supabase
+        .from('services')
+        .select('id, name')
+        .order('name');
+      
+      if (!error && data) {
+        setServicesList(data);
+      }
+    };
+    fetchServices();
+  }, []);
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!userLoading && !user) {
+      // Don't redirect immediately, show message instead
+    }
+  }, [user, userLoading]);
 
   const onSubmit = async (data: ProjectFormData) => {
     try {
-      // Send form data to email
-      const emailData = {
-        to: 'info@francesca.tabor.com',
-        subject: `New Project Submission: ${data.title}`,
-        body: `
-          Project Details:
-          Title: ${data.title}
-          Description: ${data.description}
-          Services: ${data.required_services.join(', ')}
-          Industry: ${data.industry}
-          Budget Range: ${data.budget_range}
-          Timing: ${data.timing}
-          Location: ${data.location || 'Not specified'}
-          
-          Company Details:
-          Name: ${data.company_details.company_name}
-          Email: ${data.company_details.email}
-          Phone: ${data.company_details.phone || 'Not provided'}
-        `,
-      };
+      setError(null);
+      setIsSubmitting(true);
 
-      // Store in Supabase
-      const { error } = await supabase.from('projects').insert([{
-        ...data,
-        status: 'open',
-      }]);
+      // Check authentication
+      if (!user) {
+        setError('You must be logged in to post a project. Please sign in first.');
+        return;
+      }
 
-      if (error) throw error;
+      // Map service names to service IDs
+      const serviceIds: string[] = [];
+      for (const serviceName of data.required_services) {
+        const service = servicesList.find(s => s.name === serviceName);
+        if (service) {
+          serviceIds.push(service.id);
+        } else {
+          throw new Error(`Service "${serviceName}" not found. Please refresh and try again.`);
+        }
+      }
 
+      if (serviceIds.length === 0) {
+        throw new Error('Please select at least one service.');
+      }
+
+      // Insert project
+      const { data: project, error: projectError } = await supabase
+        .from('projects')
+        .insert([{
+          user_id: user.id,
+          title: data.title,
+          description: data.description,
+          industry: data.industry,
+          budget_range: data.budget_range,
+          project_timing: data.timing,
+          location_preference: data.location || null,
+          contact_email: data.company_details.email,
+          status: 'open',
+        }])
+        .select()
+        .single();
+
+      if (projectError) throw projectError;
+      if (!project) throw new Error('Failed to create project');
+
+      // Insert project services
+      const projectServices = serviceIds.map(serviceId => ({
+        project_id: project.id,
+        service_id: serviceId,
+      }));
+
+      const { error: servicesError } = await supabase
+        .from('project_services')
+        .insert(projectServices);
+
+      if (servicesError) throw servicesError;
+
+      // Success!
+      setSubmitSuccess(true);
       reset();
-      // Show success message
-    } catch (error) {
-      console.error('Error submitting project:', error);
-      // Show error message
+
+      // Redirect after 2 seconds
+      setTimeout(() => {
+        navigate('/account/projects');
+      }, 2000);
+    } catch (err: any) {
+      console.error('Error submitting project:', err);
+      setError(err.message || 'Failed to post project. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  // Show login prompt if not authenticated
+  if (!userLoading && !user) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+          <h3 className="text-lg font-semibold text-yellow-800 mb-2">
+            Authentication Required
+          </h3>
+          <p className="text-yellow-700 mb-4">
+            You must be logged in to post a project.
+          </p>
+          <Link
+            to="/login"
+            className="btn-primary inline-block"
+          >
+            Sign In
+          </Link>
+          <span className="mx-2 text-yellow-700">or</span>
+          <Link
+            to="/register"
+            className="btn-secondary inline-block"
+          >
+            Create Account
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Show success message
+  if (submitSuccess) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-green-50 border border-green-200 rounded-lg p-8 text-center">
+          <div className="mb-4">
+            <svg
+              className="mx-auto h-12 w-12 text-green-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-2xl font-bold text-green-800 mb-2">
+            Project Posted Successfully!
+          </h3>
+          <p className="text-green-700 mb-4">
+            Your project has been submitted and is now visible to AI agencies.
+          </p>
+          <p className="text-sm text-green-600">
+            Redirecting to your projects...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl mx-auto space-y-8">
@@ -105,6 +240,12 @@ export function ProjectForm() {
           Tell us about your project and we'll help you find the perfect AI agency.
         </p>
       </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-800 text-sm">{error}</p>
+        </div>
+      )}
 
       <div className="space-y-4">
         <div>
@@ -139,19 +280,24 @@ export function ProjectForm() {
 
         <div>
           <label className="block text-sm font-medium text-gray-700">Required Services</label>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            {services.map((service) => (
-              <label key={service} className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  value={service}
-                  {...register('required_services')}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">{service}</span>
-              </label>
-            ))}
-          </div>
+          {servicesList.length === 0 ? (
+            <p className="mt-2 text-sm text-gray-500">Loading services...</p>
+          ) : (
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {servicesList.map((service) => (
+                <label key={service.id} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    value={service.name}
+                    checked={selectedServices.includes(service.name)}
+                    {...register('required_services')}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">{service.name}</span>
+                </label>
+              ))}
+            </div>
+          )}
           {errors.required_services && (
             <p className="mt-1 text-sm text-red-600">{errors.required_services.message}</p>
           )}

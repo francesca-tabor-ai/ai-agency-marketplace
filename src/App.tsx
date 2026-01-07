@@ -25,6 +25,8 @@ import { Login } from './pages/auth/Login';
 import { Register } from './pages/auth/Register';
 import { BusinessAccount } from './pages/account/BusinessAccount';
 import { AgencyAccount } from './pages/account/AgencyAccount';
+import { Projects } from './pages/account/Projects';
+import { Jobs } from './pages/account/Jobs';
 import { Contact } from './pages/Contact';
 
 function ScrollToTop() {
@@ -72,6 +74,8 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/business-account" element={<BusinessAccount />} />
             <Route path="/agency-account" element={<AgencyAccount />} />
+            <Route path="/account/projects" element={<Projects />} />
+            <Route path="/account/jobs" element={<Jobs />} />
             <Route path="/contact" element={<Contact />} />
           </Routes>
         </main>
